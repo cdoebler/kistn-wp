@@ -1,0 +1,11 @@
+<?php
+
+class WP_CLI {
+	public static function log( string $message ): void {}
+
+	public static function success( string $message ): void {}
+
+	public static function error( string $message, bool $exit = true ): void {}
+
+	public static function add_command( string $name, object $handler ): void {}
+}

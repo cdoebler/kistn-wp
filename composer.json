@@ -1,0 +1,52 @@
+{
+    "name": "kistn/wordpress",
+    "description": "WordPress plugin for the Kistn API",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christian Doebler",
+            "email": "mail@christian-doebler.net"
+        }
+    ],
+    "require": {
+        "php": "^8.3"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "phpstan/phpstan": "^2.1",
+        "rector/rector": "^2.2",
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "brain/monkey": "^2.6",
+        "mockery/mockery": "^1.6",
+        "wp-coding-standards/wpcs": "^3.0",
+        "laravel/pao": "^1.1"
+    },
+    "autoload": {
+        "classmap": [
+            "src/"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "pest": "vendor/bin/pest",
+        "phpcbf": "vendor/bin/phpcbf -d memory_limit=512M --standard=phpcs.xml",
+        "phpcs": "vendor/bin/phpcs -ps -d memory_limit=512M --standard=phpcs.xml",
+        "phpstan": "vendor/bin/phpstan analyse --memory-limit=512M",
+        "rector": "php -d memory_limit=-1 vendor/bin/rector process",
+        "rector-dry": "php -d memory_limit=-1 vendor/bin/rector process --dry-run",
+        "build": "rm -rf build && mkdir -p build/kistn && cp -r kistn.php readme.txt src build/kistn/ && cd build && zip -r kistn.zip kistn/",
+        "ci:check": [
+            "@phpcs",
+            "@phpstan",
+            "@pest"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

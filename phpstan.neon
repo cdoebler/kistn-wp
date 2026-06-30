@@ -1,0 +1,10 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+    level: max
+    paths:
+        - src
+    bootstrapFiles:
+        - tests/stubs/class-wp-cli.php
+        - tests/stubs/constants.php
+        - tests/stubs/wp-functions.php

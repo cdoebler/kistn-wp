@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="PHPCS Ruleset for WordPress code"
+         xsi:noNamespaceSchemaLocation="https://schema.phpcodesniffer.com/phpcs.xsd">
+    <description>PHPCS Ruleset for WordPress code</description>
+    <rule ref="WordPress"/>
+    <rule ref="WordPress.Files.FileName">
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+    </rule>
+    <file>.</file>
+    <exclude-pattern>*/build/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>./rector.php</exclude-pattern>
+</ruleset>

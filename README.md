@@ -10,7 +10,13 @@ WordPress plugin client for the Kistn API. Collects installed plugins, themes, a
 
 ## Installation
 
-Upload the plugin ZIP via **Plugins → Add New → Upload Plugin**, then activate.
+### Automatic installation via WordPress plugins
+
+Login to your WordPress backend, navigate to **Plugins → Add New** and search for "kistn". When the plugin "Kistn API Client" appears, click install. After installation click activate to activate the plugin.
+
+### Manual installation
+
+Download the current release from [the WordPress plugin repository](https://wordpress.org/plugins/kistn) or from [the releases page](https://github.com/cdoebler/kistn-wp/releases) and upload the plugin ZIP via **Plugins → Add New → Upload Plugin**, then activate.
 
 ## Configuration
 

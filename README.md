@@ -1,4 +1,4 @@
-# kistn/wp
+# kistn/wp-client
 
 WordPress plugin client for the Kistn API. Collects installed plugins, themes, and WordPress core, then pushes inventory for centralized vulnerability monitoring.
 
@@ -17,6 +17,14 @@ Login to your WordPress backend, navigate to **Plugins → Add New** and search 
 ### Manual installation
 
 Download the current release from [the WordPress plugin repository](https://wordpress.org/plugins/kistn) or from [the releases page](https://github.com/cdoebler/kistn-wp/releases) and upload the plugin ZIP via **Plugins → Add New → Upload Plugin**, then activate.
+
+### Via Composer
+
+```bash
+composer require kistn/wp-client
+```
+
+Then activate the plugin as usual via **Plugins** in your WordPress admin.
 
 ## Configuration
 

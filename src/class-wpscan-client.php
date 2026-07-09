@@ -11,9 +11,10 @@
  */
 class Kistn_Wpscan_Client {
 
-	private const API_BASE            = 'https://wpscan.com/api/v3';
-	private const CACHE_TTL           = DAY_IN_SECONDS;
-	private const NOT_FOUND_CACHE_TTL = 7 * DAY_IN_SECONDS;
+	private const API_BASE             = 'https://wpscan.com/api/v3';
+	private const CACHE_TTL            = DAY_IN_SECONDS;
+	private const NOT_FOUND_CACHE_TTL  = 7 * DAY_IN_SECONDS;
+	private const RATE_LIMIT_TRANSIENT = 'kistn_wpscan_rate_limited';
 	/**
 	 * WPScan API token.
 	 *
@@ -139,6 +140,10 @@ class Kistn_Wpscan_Client {
 	 * @return array<int, mixed>|false|null
 	 */
 	private function fetch_raw( string $ecosystem, string $slug, string $version ): array|false|null {
+		if ( false !== get_transient( self::RATE_LIMIT_TRANSIENT ) ) {
+			return null;
+		}
+
 		if ( 'wp-core' === $ecosystem ) {
 			$url       = self::API_BASE . '/wordpresses/' . rawurlencode( $version );
 			$entry_key = $version;
@@ -166,7 +171,8 @@ class Kistn_Wpscan_Client {
 
 		if ( 429 === $code ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			error_log( '[Kistn] WPScan rate limit reached. Skipping vulnerability scan for this run.' );
+			error_log( '[Kistn] WPScan rate limit reached. Blocking WPScan requests until tomorrow (site timezone).' );
+			set_transient( self::RATE_LIMIT_TRANSIENT, true, $this->seconds_until_next_day() );
 			return null;
 		}
 
@@ -191,6 +197,16 @@ class Kistn_Wpscan_Client {
 		}
 
 		return array_values( $entry['vulnerabilities'] );
+	}
+
+	/**
+	 * Seconds remaining until local midnight, in the site's configured timezone.
+	 */
+	private function seconds_until_next_day(): int {
+		$now      = new DateTimeImmutable( 'now', wp_timezone() );
+		$midnight = $now->modify( 'tomorrow' );
+
+		return max( 1, $midnight->getTimestamp() - $now->getTimestamp() );
 	}
 
 	/**

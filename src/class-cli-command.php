@@ -1,6 +1,6 @@
 <?php
 /**
- * WP-CLI command: wp inventory push
+ * WP-CLI command: wp kistn push
  *
  * @package Kistn
  */
@@ -22,7 +22,7 @@ class Kistn_Cli_Command {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *   wp inventory push
+	 *   wp kistn push
 	 *
 	 * @when after_wp_load
 	 */

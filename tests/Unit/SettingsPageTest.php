@@ -73,18 +73,24 @@ test('render shows incomplete config notice when config is invalid', function ()
 test('render shows wp-cli crontab hint when schedule_mode is wp-cli', function () {
     stub_wp_rendering();
     Functions\when( 'current_user_can' )->justReturn( true );
-    Functions\when( 'get_option' )->justReturn( '' );
+    Functions\when( 'get_option' )->alias( static function ( string $option, mixed $default = '' ): mixed {
+        return 'kistn_schedule_mode' === $option ? 'wp-cli' : '';
+    } );
 
     $config = Mockery::mock( Kistn_Config::class );
     $config->allows( 'is_valid' )->andReturn( true );
     $config->allows( 'is_constant' )->andReturn( false );
-    $config->allows( 'schedule_mode' )->andReturn( 'wp-cli' );
+    // Deliberately stale: the config snapshot as it would have been captured at
+    // construction time, before this request's save() persisted 'wp-cli' (see the
+    // get_option stub above). current_schedule_mode() must prefer the fresh option
+    // value over this stale mock for the hint to correctly show.
+    $config->allows( 'schedule_mode' )->andReturn( 'wp-cron' );
 
     ob_start();
     ( new Kistn_Settings_Page( $config ) )->render();
     $output = ob_get_clean();
 
-    expect( $output )->toContain( 'wp inventory push' );
+    expect( $output )->toContain( 'wp kistn push' );
 });
 
 test('render shows error notice when kistn_last_error is set', function () {
@@ -104,6 +110,45 @@ test('render shows error notice when kistn_last_error is set', function () {
     $output = ob_get_clean();
 
     expect( $output )->toContain( 'notice-error' );
+});
+
+test('render hides the interval row when schedule_mode is wp-cli', function () {
+    stub_wp_rendering();
+    Functions\when( 'current_user_can' )->justReturn( true );
+    Functions\when( 'get_option' )->alias( static function ( string $option, mixed $default = '' ): mixed {
+        return 'kistn_schedule_mode' === $option ? 'wp-cli' : '';
+    } );
+
+    $config = Mockery::mock( Kistn_Config::class );
+    $config->allows( 'is_valid' )->andReturn( true );
+    $config->allows( 'is_constant' )->andReturn( false );
+    $config->allows( 'schedule_mode' )->andReturn( 'wp-cron' ); // deliberately stale/irrelevant — current_schedule_mode() must use the fresh get_option value, not this mock
+
+    ob_start();
+    ( new Kistn_Settings_Page( $config ) )->render();
+    $output = ob_get_clean();
+
+    expect( $output )->toContain( 'id="kistn-interval-row"' );
+    expect( $output )->toContain( 'style="display:none"' );
+});
+
+test('render shows the interval row when schedule_mode is wp-cron', function () {
+    stub_wp_rendering();
+    Functions\when( 'current_user_can' )->justReturn( true );
+    Functions\when( 'get_option' )->justReturn( '' );
+
+    $config = Mockery::mock( Kistn_Config::class );
+    $config->allows( 'is_valid' )->andReturn( true );
+    $config->allows( 'is_constant' )->andReturn( false );
+    $config->allows( 'schedule_mode' )->andReturn( 'wp-cron' );
+
+    ob_start();
+    ( new Kistn_Settings_Page( $config ) )->render();
+    $output = ob_get_clean();
+
+    expect( $output )->toContain( 'id="kistn-interval-row"' );
+    expect( $output )->not()->toContain( 'style="display:none"' );
+    expect( $output )->toContain( "getElementById( 'kistn_schedule_mode' )" );
 });
 
 test('render saves options and resyncs schedule when valid nonce submitted', function () {
@@ -141,6 +186,23 @@ test('render saves options and resyncs schedule when valid nonce submitted', fun
     $_POST = [];
 
     expect( true )->toBeTrue();
+});
+
+test('render shows an example placeholder on the base_url field', function () {
+    stub_wp_rendering();
+    Functions\when( 'current_user_can' )->justReturn( true );
+    Functions\when( 'get_option' )->justReturn( '' );
+
+    $config = Mockery::mock( Kistn_Config::class );
+    $config->allows( 'is_valid' )->andReturn( true );
+    $config->allows( 'is_constant' )->andReturn( false );
+    $config->allows( 'schedule_mode' )->andReturn( 'wp-cron' );
+
+    ob_start();
+    ( new Kistn_Settings_Page( $config ) )->render();
+    $output = ob_get_clean();
+
+    expect( $output )->toContain( 'placeholder="https://kistn.com"' );
 });
 
 test('render skips saving constant-locked fields', function () {

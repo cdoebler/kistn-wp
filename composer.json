@@ -1,5 +1,5 @@
 {
-    "name": "kistn/wordpress",
+    "name": "kistn/wp-client",
     "description": "WordPress plugin for the Kistn API",
     "type": "library",
     "license": "MIT",

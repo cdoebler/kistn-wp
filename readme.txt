@@ -4,7 +4,7 @@ Tags: inventory, security, vulnerability, monitoring
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: MIT
 
 Pushes installed plugin and theme inventory to the Kistn API for vulnerability monitoring.
@@ -37,11 +37,23 @@ When the feature is used, this plugin sends information about installed WordPres
 
 == Installation ==
 
-1. Upload the plugin ZIP via Plugins → Add New → Upload Plugin.
-2. Activate the plugin.
-3. Go to Settings → Kistn and configure your API credentials.
+1. In your WordPress admin, go to Plugins → Add New, search for "Kistn API Client", install and activate.
+2. Alternatively, upload the plugin ZIP via Plugins → Add New → Upload Plugin, then activate.
+3. Alternatively, via Composer: `composer require kistn/wp-client`, then activate as usual.
+4. Go to Settings → Kistn and configure your API credentials.
 
 == Changelog ==
+
+= 1.0.2 =
+
+= 1.0.1 =
+* Fix: WPScan requests now pause until the next day (site timezone) after hitting the 429 rate limit, instead of retrying every remaining slug in the same run.
+* Change: The Push Interval field is now hidden when Schedule Mode is set to WP-CLI only (it doesn't apply to that mode).
+* Change: Renamed the WP-CLI command from `wp inventory push` to `wp kistn push`.
+* Change: Added an example placeholder to the API Base URL field.
+* Docs: Documented WordPress-plugin-repository installation as the primary install method.
+* Change: The server-crontab hint under Settings → Kistn now toggles live when Schedule Mode is switched, instead of only appearing after a save.
+* Docs: Documented Composer installation option (`composer require kistn/wp-client`) in README.md and readme.txt.
 
 = 1.0.0 =
 * Initial release.

@@ -49,7 +49,7 @@ class Kistn_Plugin {
 		add_action( 'kistn_run_inventory_push', array( $this, 'maybe_push' ) );
 
 		if ( defined( 'WP_CLI' ) && true === WP_CLI ) {
-			WP_CLI::add_command( 'inventory', new Kistn_Cli_Command( $this->pusher ) );
+			WP_CLI::add_command( 'kistn', new Kistn_Cli_Command( $this->pusher ) );
 			return;
 		}
 

@@ -66,13 +66,53 @@ test('fetches from API on cache miss and caches result', function () {
 });
 
 test('returns empty array on 429 rate limit and logs error', function () {
-    Functions\expect( 'get_transient' )->andReturn( false );
+    Functions\expect( 'get_transient' )->with( 'kistn_wpscan_wp-plugin_akismet' )->andReturn( false );
+    Functions\expect( 'get_transient' )->with( 'kistn_wpscan_rate_limited' )->andReturn( false );
     Functions\expect( 'wp_remote_get' )->andReturn( [] );
     Functions\expect( 'is_wp_error' )->andReturn( false );
     Functions\expect( 'wp_remote_retrieve_response_code' )->andReturn( 429 );
+    Functions\expect( 'wp_timezone' )->andReturn( new DateTimeZone( 'UTC' ) );
+    Functions\expect( 'set_transient' )->once()->with( 'kistn_wpscan_rate_limited', true, Mockery::type( 'int' ) );
     Functions\expect( 'error_log' )->once();
 
     $result = ( new Kistn_Wpscan_Client( 'tok' ) )->find_advisories( 'wp-plugin', [ [ 'name' => 'akismet', 'version' => '5.3.1' ] ] );
+
+    expect( $result['findings'] )->toBe( [] );
+    expect( $result['snapshots'] )->toBe( [] );
+});
+
+test('429 rate limit blocks further WPScan calls within the same run', function () {
+    $rate_limited = false;
+
+    Functions\when( 'get_transient' )->alias( function ( string $key ) use ( &$rate_limited ) {
+        return 'kistn_wpscan_rate_limited' === $key ? $rate_limited : false;
+    } );
+    Functions\when( 'set_transient' )->alias( function ( string $key, mixed $value ) use ( &$rate_limited ) {
+        if ( 'kistn_wpscan_rate_limited' === $key ) {
+            $rate_limited = $value;
+        }
+    } );
+    Functions\expect( 'wp_remote_get' )->once()->andReturn( [] );
+    Functions\when( 'is_wp_error' )->justReturn( false );
+    Functions\when( 'wp_remote_retrieve_response_code' )->justReturn( 429 );
+    Functions\when( 'wp_timezone' )->justReturn( new DateTimeZone( 'UTC' ) );
+    Functions\when( 'error_log' )->justReturn();
+
+    $result = ( new Kistn_Wpscan_Client( 'tok' ) )->find_advisories( 'wp-plugin', [
+        [ 'name' => 'akismet', 'version' => '1.0' ],
+        [ 'name' => 'jetpack', 'version' => '1.0' ],
+    ] );
+
+    expect( $result['findings'] )->toBe( [] );
+});
+
+test('skips WPScan API call entirely when already rate limited from a previous run', function () {
+    Functions\when( 'get_transient' )->alias( function ( string $key ) {
+        return 'kistn_wpscan_rate_limited' === $key ? true : false;
+    } );
+    Functions\expect( 'wp_remote_get' )->never();
+
+    $result = ( new Kistn_Wpscan_Client( 'tok' ) )->find_advisories( 'wp-plugin', [ [ 'name' => 'akismet', 'version' => '1.0' ] ] );
 
     expect( $result['findings'] )->toBe( [] );
     expect( $result['snapshots'] )->toBe( [] );
@@ -353,7 +393,7 @@ test('severity mapping from cvss score', function () {
 
     $bodyIndex = 0;
 
-    Functions\expect( 'get_transient' )->times( 4 )->andReturn( false );
+    Functions\expect( 'get_transient' )->times( 8 )->andReturn( false );
     Functions\expect( 'wp_remote_get' )->times( 4 )->andReturn( [] );
     Functions\expect( 'is_wp_error' )->times( 4 )->andReturn( false );
     Functions\expect( 'wp_remote_retrieve_response_code' )->times( 4 )->andReturn( 200 );

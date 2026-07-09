@@ -13,13 +13,14 @@ class Kistn_Settings_Page {
 	/**
 	 * Text field definitions.
 	 *
-	 * @var array<string, array{label: string, key: string, constant: string, type?: string}>
+	 * @var array<string, array{label: string, key: string, constant: string, type?: string, placeholder?: string}>
 	 */
 	private const TEXT_FIELDS = array(
 		'kistn_base_url'     => array(
-			'label'    => 'API Base URL',
-			'key'      => 'base_url',
-			'constant' => 'KISTN_BASE_URL',
+			'label'       => 'API Base URL',
+			'key'         => 'base_url',
+			'constant'    => 'KISTN_BASE_URL',
+			'placeholder' => 'https://kistn.com',
 		),
 		'kistn_project_id'   => array(
 			'label'    => 'Project ID',
@@ -106,7 +107,7 @@ class Kistn_Settings_Page {
 						// submit keeps the existing value (see save()).
 						$is_secret   = 'password' === ( $field['type'] ?? '' );
 						$input_val   = $is_secret ? '' : $field_val;
-						$placeholder = ( $is_secret && '' !== $field_val ) ? '••••••••' : '';
+						$placeholder = ( $is_secret && '' !== $field_val ) ? '••••••••' : ( $field['placeholder'] ?? '' );
 						?>
 						<tr>
 							<th><label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $field['label'] ); ?></label></th>
@@ -157,17 +158,17 @@ class Kistn_Settings_Page {
 								<?php endforeach; ?>
 							</select>
 
-							<?php if ( 'wp-cli' === $this->config->schedule_mode() ) : ?>
-								<div style="margin-top:10px;padding:10px 14px;background:#f6f7f7;border:1px solid #dcdcde;font-family:monospace;font-size:13px;line-height:1.6">
-									<strong><?php esc_html_e( 'Add to your server crontab (example: daily at 2am):', 'kistn' ); ?></strong><br>
-									<code>0 2 * * * cd /var/www/html &amp;&amp; wp inventory push --allow-root</code><br><br>
-									<small><?php esc_html_e( 'WP-CLI must be installed on the server. Replace /var/www/html with the absolute path to your WordPress root.', 'kistn' ); ?></small>
-								</div>
-							<?php endif; ?>
+							<?php $current_mode = $this->current_schedule_mode(); ?>
+
+							<div id="kistn-cron-instructions" style="margin-top:10px;padding:10px 14px;background:#f6f7f7;border:1px solid #dcdcde;font-family:monospace;font-size:13px;line-height:1.6<?php echo ( 'wp-cli' !== $current_mode ) ? ';display:none' : ''; ?>">
+								<strong><?php esc_html_e( 'Add to your server crontab (example: daily at 2am):', 'kistn' ); ?></strong><br>
+								<code>0 2 * * * cd /var/www/html &amp;&amp; wp kistn push</code><br><br>
+								<small><?php esc_html_e( 'WP-CLI must be installed on the server. Replace /var/www/html with the absolute path to your WordPress root.', 'kistn' ); ?></small>
+							</div>
 						</td>
 					</tr>
 
-					<tr>
+					<tr id="kistn-interval-row" <?php echo ( 'wp-cli' === $current_mode ) ? 'style="display:none"' : ''; ?>>
 						<th><label for="kistn_schedule_interval"><?php esc_html_e( 'Push Interval', 'kistn' ); ?></label></th>
 						<td>
 							<?php $interval_locked = $this->config->is_constant( 'schedule_interval' ); ?>
@@ -189,12 +190,44 @@ class Kistn_Settings_Page {
 					</tr>
 
 				</table>
+				<script>
+				( function () {
+					var modeSelect     = document.getElementById( 'kistn_schedule_mode' );
+					var intervalRow    = document.getElementById( 'kistn-interval-row' );
+					var cronInstructions = document.getElementById( 'kistn-cron-instructions' );
+
+					if ( ! modeSelect || ! intervalRow || ! cronInstructions ) {
+						return;
+					}
+
+					modeSelect.addEventListener( 'change', function () {
+						var isWpCli = ( 'wp-cli' === modeSelect.value );
+						intervalRow.style.display = isWpCli ? 'none' : '';
+						cronInstructions.style.display = isWpCli ? '' : 'none';
+					} );
+				} )();
+				</script>
 				<p class="submit">
 					<input type="submit" class="button-primary" value="<?php esc_attr_e( 'Save Settings', 'kistn' ); ?>"/>
 				</p>
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Returns the schedule mode as it will be after this request's save() call —
+	 * constant-locked values win; otherwise reads the option fresh (not the
+	 * possibly-stale value captured in $this->config at construction time).
+	 */
+	private function current_schedule_mode(): string {
+		if ( $this->config->is_constant( 'schedule_mode' ) ) {
+			return $this->config->schedule_mode();
+		}
+
+		$raw = get_option( 'kistn_schedule_mode', 'wp-cron' );
+
+		return is_string( $raw ) && '' !== $raw ? $raw : 'wp-cron';
 	}
 
 	/**

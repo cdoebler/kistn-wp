@@ -44,8 +44,6 @@ When the feature is used, this plugin sends information about installed WordPres
 
 == Changelog ==
 
-= 1.0.2 =
-
 = 1.0.1 =
 * Fix: WPScan requests now pause until the next day (site timezone) after hitting the 429 rate limit, instead of retrying every remaining slug in the same run.
 * Change: The Push Interval field is now hidden when Schedule Mode is set to WP-CLI only (it doesn't apply to that mode).

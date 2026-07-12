@@ -69,6 +69,22 @@ class Kistn_Config {
 	 * @param Kistn_Config_Helper $helper Testable helper for constant/option lookups.
 	 */
 	public function __construct( private readonly Kistn_Config_Helper $helper ) {
+		$this->load();
+	}
+
+	/**
+	 * Re-reads all config values from constants/options. Call after persisting
+	 * settings so a same-request validity check reflects the saved state instead
+	 * of the snapshot taken at construction time.
+	 */
+	public function refresh(): void {
+		$this->load();
+	}
+
+	/**
+	 * Resolves all config values from constants and options into this instance.
+	 */
+	private function load(): void {
 		$this->base_url          = $this->resolve( 'base_url', 'kistn_base_url', '' );
 		$this->project_id        = $this->resolve( 'project_id', 'kistn_project_id', '' );
 		$this->token             = $this->resolve( 'token', 'kistn_token', '' );

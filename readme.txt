@@ -2,9 +2,9 @@
 Contributors: grissi
 Tags: inventory, security, vulnerability, monitoring
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.0.1
 Requires PHP: 8.3
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: MIT
 
 Pushes installed plugin and theme inventory to the Kistn API for vulnerability monitoring.
@@ -43,6 +43,11 @@ When the feature is used, this plugin sends information about installed WordPres
 4. Go to Settings → Kistn and configure your API credentials.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix: The settings page no longer shows "Configuration incomplete" after saving valid settings with the (optional) WPScan API Token left empty — the completeness notice now reflects the just-saved state.
+* Fix: Public plugins/themes hosted on wordpress.org are no longer mislabelled as private. Public/private is now determined from wordpress.org directory membership (via WP's own update transient) instead of the presence of a `PluginURI` header or a WPScan entry — a public plugin can lack both.
+* Change: The inventory payload now reports confirmed-public slugs in a new `public_packages` field so the server can display them with their public registry information.
 
 = 1.0.1 =
 * Fix: WPScan requests now pause until the next day (site timezone) after hitting the 429 rate limit, instead of retrying every remaining slug in the same run.

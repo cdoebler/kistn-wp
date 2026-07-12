@@ -165,10 +165,10 @@ test('push queries WPScan only for slugs marked stale by preflight', function ()
     expect( true )->toBeTrue();
 });
 
-test('push infers private for packages without source_url without querying WPScan', function () {
+test('push classifies packages by wordpress.org directory membership and skips WPScan for private slugs', function () {
     $plugins = [
-        [ 'name' => 'public-plugin',  'version' => '1.0.0', 'is_direct' => true, 'is_dev' => false, 'is_active' => true, 'depth' => 0, 'source_url' => 'https://wordpress.org/plugins/public-plugin' ],
-        [ 'name' => 'private-plugin', 'version' => '2.0.0', 'is_direct' => true, 'is_dev' => false, 'is_active' => true, 'depth' => 0, 'source_url' => null ],
+        [ 'name' => 'public-plugin',  'version' => '1.0.0', 'is_direct' => true, 'is_dev' => false, 'is_active' => true, 'depth' => 0, 'source_url' => null, 'in_directory' => true ],
+        [ 'name' => 'private-plugin', 'version' => '2.0.0', 'is_direct' => true, 'is_dev' => false, 'is_active' => true, 'depth' => 0, 'source_url' => null, 'in_directory' => false ],
     ];
 
     $m = make_pusher_mocks();
@@ -187,6 +187,7 @@ test('push infers private for packages without source_url without querying WPSca
         'private'    => [],
     ] );
 
+    // Only the in-directory (public) slug is worth a WPScan lookup.
     $m['wpscan']->expects( 'find_advisories' )
         ->once()
         ->with( 'wp-plugin', [ [ 'name' => 'public-plugin', 'version' => '1.0.0' ] ] )
@@ -196,7 +197,10 @@ test('push infers private for packages without source_url without querying WPSca
         ->once()
         ->with( Mockery::on( static fn( array $e ): bool =>
             isset( $e['wp-plugin'] )
-            && in_array( 'private-plugin', $e['wp-plugin']['private_packages'], true )
+            && [ 'private-plugin' ] === $e['wp-plugin']['private_packages']
+            && [ 'public-plugin' ] === $e['wp-plugin']['public_packages']
+            // in_directory is stripped before the payload leaves the client.
+            && ! array_key_exists( 'in_directory', $e['wp-plugin']['packages'][0] )
         ) );
 
     Functions\expect( 'wp_json_encode' )->andReturnUsing( static fn( mixed $d ): string|false => json_encode( $d ) );

@@ -62,6 +62,44 @@ test('is_valid returns true when all required fields present', function () {
     expect( $config->is_valid() )->toBeTrue();
 });
 
+test('is_valid is true with an empty WPScan token (WPScan token is optional)', function () {
+    $config = new Kistn_Config( make_config_helper( options: [
+        'kistn_base_url'   => 'https://example.com',
+        'kistn_project_id' => 'uuid-123',
+        'kistn_token'      => 'tok-abc',
+        'kistn_wpscan_token' => '',
+    ] ) );
+    expect( $config->is_valid() )->toBeTrue()
+        ->and( $config->wpscan_token() )->toBeNull();
+});
+
+test('refresh re-reads options so a same-request validity check reflects saved state', function () {
+    $options = [];
+
+    $helper = Mockery::mock( Kistn_Config_Helper::class );
+    $helper->allows( 'is_constant_defined' )->andReturn( false );
+    $helper->allows( 'get_constant' )->andReturn( null );
+    $helper->allows( 'get_wp_option' )->andReturnUsing(
+        function ( string $option, mixed $default ) use ( &$options ): mixed {
+            return $options[ $option ] ?? $default;
+        }
+    );
+
+    $config = new Kistn_Config( $helper );
+    expect( $config->is_valid() )->toBeFalse();
+
+    // Simulate save() persisting the required fields (WPScan token left empty).
+    $options = [
+        'kistn_base_url'   => 'https://example.com',
+        'kistn_project_id' => 'uuid-123',
+        'kistn_token'      => 'tok-abc',
+    ];
+
+    $config->refresh();
+
+    expect( $config->is_valid() )->toBeTrue();
+});
+
 test('is_constant returns true only for defined key', function () {
     $config = new Kistn_Config( make_config_helper(
         constants: [ 'KISTN_BASE_URL' => 'https://example.com' ],

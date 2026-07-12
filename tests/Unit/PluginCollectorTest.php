@@ -25,6 +25,7 @@ test('collect returns all installed plugins with is_active flag', function () {
         'source_url'        => null,
         'available_version' => null,
         'author'            => null,
+        'in_directory'      => null,
     ] );
     expect( $packages[1]['is_active'] )->toBeFalse();
 });
@@ -53,6 +54,46 @@ test('slug is filename without extension for single-file plugins', function () {
     Functions\expect( 'is_plugin_active' )->andReturn( false );
 
     expect( ( new Kistn_Plugin_Collector() )->collect()[0]['name'] )->toBe( 'hello' );
+});
+
+test('in_directory is true when the plugin appears in the update transient', function () {
+    $transient            = new stdClass();
+    $transient->response  = [];
+    $transient->no_update = [ 'akismet/akismet.php' => new stdClass() ];
+    $transient->checked   = [ 'akismet/akismet.php' => '5.3.1' ];
+
+    Functions\expect( 'get_site_transient' )->once()->with( 'update_plugins' )->andReturn( $transient );
+    Functions\expect( 'get_plugins' )->once()->andReturn( [
+        'akismet/akismet.php' => [ 'Name' => 'Akismet', 'Version' => '5.3.1' ],
+    ] );
+    Functions\expect( 'is_plugin_active' )->andReturn( true );
+
+    expect( ( new Kistn_Plugin_Collector() )->collect()[0]['in_directory'] )->toBeTrue();
+});
+
+test('in_directory is false when the plugin was checked but is absent from wordpress.org', function () {
+    $transient            = new stdClass();
+    $transient->response  = [];
+    $transient->no_update = [];
+    $transient->checked   = [ 'my-premium-plugin/plugin.php' => '2.0.0' ];
+
+    Functions\expect( 'get_site_transient' )->once()->with( 'update_plugins' )->andReturn( $transient );
+    Functions\expect( 'get_plugins' )->once()->andReturn( [
+        'my-premium-plugin/plugin.php' => [ 'Name' => 'Premium', 'Version' => '2.0.0' ],
+    ] );
+    Functions\expect( 'is_plugin_active' )->andReturn( true );
+
+    expect( ( new Kistn_Plugin_Collector() )->collect()[0]['in_directory'] )->toBeFalse();
+});
+
+test('in_directory is null when no update check has run', function () {
+    Functions\when( 'get_site_transient' )->justReturn( false );
+    Functions\expect( 'get_plugins' )->once()->andReturn( [
+        'akismet/akismet.php' => [ 'Name' => 'Akismet', 'Version' => '5.3.1' ],
+    ] );
+    Functions\expect( 'is_plugin_active' )->andReturn( true );
+
+    expect( ( new Kistn_Plugin_Collector() )->collect()[0]['in_directory'] )->toBeNull();
 });
 
 test('available_version is populated from update_plugins transient response', function () {

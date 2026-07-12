@@ -278,6 +278,10 @@ class Kistn_Settings_Page {
 
 		update_option( 'kistn_last_error', '' );
 
+		// Re-read the just-persisted values so the completeness notice in render()
+		// reflects the saved state, not the snapshot taken at construction time.
+		$this->config->refresh();
+
 		$this->resync_schedule();
 	}
 

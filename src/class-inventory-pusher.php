@@ -54,7 +54,7 @@ class Kistn_Inventory_Pusher {
 				continue;
 			}
 
-			$content_hash = hash( 'sha256', (string) wp_json_encode( $packages ) );
+			$content_hash = hash( 'sha256', (string) wp_json_encode( $this->strip_internal_keys( $packages ) ) );
 			$server_hash  = $server_hashes[ $ecosystem ] ?? null;
 
 			if ( $content_hash === $server_hash ) {
@@ -131,12 +131,12 @@ class Kistn_Inventory_Pusher {
 	/**
 	 * Builds the push payload for a single ecosystem.
 	 *
-	 * @param string                                                                                                                                                                $ecosystem     Ecosystem slug.
-	 * @param array<int, array{name: string, version: string, is_direct: bool, is_dev: bool, is_active: bool, depth: int, source_url: string|null, available_version: string|null}> $packages      Collected packages for this ecosystem.
-	 * @param array<int, string>                                                                                                                                                    $stale_names   Slug names that need WPScan queries.
-	 * @param array<string, array<int, array{ecosystem: string, name: string, advisories: array<int, mixed>, expires_at: string}>>                                                  $cached_by_eco All cached advisories grouped by ecosystem.
-	 * @param string[]                                                                                                                                                              $private_names Server-confirmed private slugs — skip WPScan entirely.
-	 * @return array{packages: array<int, array<string, mixed>>, findings: array<int, array<string, mixed>>, advisories: array<int, array<string, mixed>>, private_packages: string[]}
+	 * @param string                                                                                                                                                                                                                $ecosystem     Ecosystem slug.
+	 * @param array<int, array{name: string, version: string, is_direct: bool, is_dev: bool, is_active: bool, depth: int, source_url: string|null, available_version: string|null, author?: string|null, in_directory?: bool|null}> $packages Collected packages for this ecosystem.
+	 * @param array<int, string>                                                                                                                                                                                                    $stale_names   Slug names that need WPScan queries.
+	 * @param array<string, array<int, array{ecosystem: string, name: string, advisories: array<int, mixed>, expires_at: string}>>                                                                                                  $cached_by_eco All cached advisories grouped by ecosystem.
+	 * @param string[]                                                                                                                                                                                                              $private_names Server-confirmed private slugs — skip WPScan entirely.
+	 * @return array{packages: array<int, array<string, mixed>>, findings: array<int, array<string, mixed>>, advisories: array<int, array<string, mixed>>, private_packages: string[], public_packages: string[]}
 	 */
 	private function build_ecosystem_payload(
 		string $ecosystem,
@@ -145,16 +145,28 @@ class Kistn_Inventory_Pusher {
 		array $cached_by_eco,
 		array $private_names = array(),
 	): array {
-		// Packages without a source_url have no public web presence — treat as private without querying WPScan.
-		$no_url_private = array_values(
+		// wordpress.org directory membership (from WP core's update transient) is the
+		// authoritative public/private signal. Confirmed-absent = private; confirmed-present = public.
+		$not_in_directory = array_values(
 			array_map(
 				static fn( array $p ): string => $p['name'],
 				array_filter(
 					$packages,
 					static fn( array $p ): bool =>
 					'wp-core' !== $ecosystem
-					&& null === ( $p['source_url'] ?? null )
-					&& ! in_array( $p['name'], $private_names, true )
+					&& false === ( $p['in_directory'] ?? null )
+				)
+			)
+		);
+
+		$in_directory = array_values(
+			array_map(
+				static fn( array $p ): string => $p['name'],
+				array_filter(
+					$packages,
+					static fn( array $p ): bool =>
+					'wp-core' !== $ecosystem
+					&& true === ( $p['in_directory'] ?? null )
 				)
 			)
 		);
@@ -165,7 +177,7 @@ class Kistn_Inventory_Pusher {
 				static fn( array $p ): bool =>
 					in_array( $p['name'], $stale_names, true )
 					&& ! in_array( $p['name'], $private_names, true )
-					&& ( 'wp-core' === $ecosystem || null !== ( $p['source_url'] ?? null ) )
+					&& ( 'wp-core' === $ecosystem || false !== ( $p['in_directory'] ?? null ) )
 			)
 		);
 
@@ -193,10 +205,29 @@ class Kistn_Inventory_Pusher {
 		);
 
 		return array(
-			'packages'         => $packages,
+			'packages'         => $this->strip_internal_keys( $packages ),
 			'findings'         => array_merge( $wpscan_result['findings'], $cached_findings ),
 			'advisories'       => $wpscan_result['snapshots'],
-			'private_packages' => array_values( array_unique( array_merge( $wpscan_result['not_found'], $no_url_private ) ) ),
+			'private_packages' => array_values( array_unique( $not_in_directory ) ),
+			'public_packages'  => array_values( array_unique( $in_directory ) ),
+		);
+	}
+
+	/**
+	 * Removes client-internal keys (never sent to the API) from collected packages.
+	 * `in_directory` drives public/private classification locally; keeping it out of
+	 * the pushed payload also keeps the content hash stable against the server's.
+	 *
+	 * @param  array<int, array<string, mixed>> $packages Collected packages.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function strip_internal_keys( array $packages ): array {
+		return array_map(
+			static function ( array $p ): array {
+				unset( $p['in_directory'] );
+				return $p;
+			},
+			$packages
 		);
 	}
 

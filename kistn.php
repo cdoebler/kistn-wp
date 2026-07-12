@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Kistn API Client
  * Description:       Pushes installed plugin and theme inventory to the Kistn API for vulnerability monitoring.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Requires at least: 6.0
  * Requires PHP:      8.3
  * Author:            Christian Doebler

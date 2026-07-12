@@ -178,6 +178,7 @@ test('render saves options and resyncs schedule when valid nonce submitted', fun
     $config->allows( 'is_constant' )->andReturn( false );
     $config->allows( 'schedule_mode' )->andReturn( 'wp-cron' );
     $config->allows( 'schedule_interval' )->andReturn( 'daily' );
+    $config->allows( 'refresh' );
 
     ob_start();
     ( new Kistn_Settings_Page( $config ) )->render();
@@ -236,6 +237,7 @@ test('render skips saving constant-locked fields', function () {
     );
     $config->allows( 'schedule_mode' )->andReturn( 'wp-cron' );
     $config->allows( 'schedule_interval' )->andReturn( 'daily' );
+    $config->allows( 'refresh' );
 
     ob_start();
     ( new Kistn_Settings_Page( $config ) )->render();

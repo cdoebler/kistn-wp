@@ -2,6 +2,26 @@
 
 use Brain\Monkey\Functions;
 
+test('in_directory reflects wordpress.org theme directory membership', function () {
+    $transient            = new stdClass();
+    $transient->response  = [];
+    $transient->no_update = [ 'twentytwentyfour' => [] ];
+    $transient->checked   = [ 'twentytwentyfour' => '1.2.0', 'custom-theme' => '1.0.0' ];
+
+    Functions\expect( 'get_site_transient' )->once()->with( 'update_themes' )->andReturn( $transient );
+    Functions\expect( 'wp_get_themes' )->once()->andReturn( [
+        'twentytwentyfour' => new WP_Theme( '1.2.0' ),
+        'custom-theme'     => new WP_Theme( '1.0.0' ),
+    ] );
+    Functions\expect( 'get_stylesheet' )->andReturn( 'twentytwentyfour' );
+    Functions\expect( 'get_template' )->andReturn( 'twentytwentyfour' );
+
+    $packages = ( new Kistn_Theme_Collector() )->collect();
+
+    expect( $packages[0]['in_directory'] )->toBeTrue()
+        ->and( $packages[1]['in_directory'] )->toBeFalse();
+});
+
 test('collect returns all themes with is_active flag', function () {
     Functions\when( 'get_site_transient' )->justReturn( false );
     Functions\expect( 'wp_get_themes' )->once()->andReturn( [
@@ -25,6 +45,7 @@ test('collect returns all themes with is_active flag', function () {
         'source_url'        => null,
         'available_version' => null,
         'author'            => null,
+        'in_directory'      => null,
     ] );
     expect( $packages[1]['is_active'] )->toBeFalse();
 });

@@ -2,9 +2,9 @@
 Contributors: grissi
 Tags: inventory, security, vulnerability, monitoring
 Requires at least: 6.0
-Tested up to: 7.0.1
+Tested up to: 7.1
 Requires PHP: 8.3
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: MIT
 
 Pushes installed plugin and theme inventory to the Kistn API for vulnerability monitoring.
@@ -43,6 +43,9 @@ When the feature is used, this plugin sends information about installed WordPres
 4. Go to Settings → Kistn and configure your API credentials.
 
 == Changelog ==
+
+= 1.0.3 =
+* Bump tested wp version.
 
 = 1.0.2 =
 * Fix: The settings page no longer shows "Configuration incomplete" after saving valid settings with the (optional) WPScan API Token left empty — the completeness notice now reflects the just-saved state.
